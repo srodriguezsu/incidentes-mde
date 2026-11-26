@@ -1,50 +1,121 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
-  --card: #ffffff;
-  --muted: #78716c;
-  --line: #e7e5e4;
-  --accent: #e11d48;   /* incidentes */
-  --accent-2: #7c3aed; /* letalidad */
-  --accent-3: #0891b2; /* referencia */
+  --background: #f7f4ef;
+  --foreground: #17130f;
+  --card: rgba(255, 255, 255, 0.78);
+  --card-solid: #ffffff;
+  --muted: #776d63;
+  --line: #e6dfd5;
+  --accent: #e11d48;
+  --accent-2: #7c3aed;
+  --accent-3: #0891b2;
+  --amber: #f59e0b;
+  --glow: rgba(225, 29, 72, 0.18);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
+  --color-card-solid: var(--card-solid);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
   --color-accent-2: var(--accent-2);
   --color-accent-3: var(--accent-3);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-amber: var(--amber);
+  --font-sans: var(--font-cuerpo);
+  --font-display: var(--font-titulo);
+  --font-mono: var(--font-mono-g);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0c0a09;
-    --foreground: #f5f5f4;
-    --card: #1c1917;
-    --muted: #a8a29e;
-    --line: #292524;
-    --accent: #fb7185;
-    --accent-2: #a78bfa;
-    --accent-3: #22d3ee;
+    --background: #0b0910;
+    --foreground: #f6f1ea;
+    --card: rgba(24, 20, 30, 0.72);
+    --card-solid: #18141e;
+    --muted: #a59bb0;
+    --line: rgba(255, 255, 255, 0.08);
+    --accent: #ff4d6d;
+    --accent-2: #b794ff;
+    --accent-3: #3dd6f5;
+    --amber: #ffb547;
+    --glow: rgba(255, 77, 109, 0.22);
   }
 }
 
+html { scroll-behavior: smooth; }
+
 body {
-  background: var(--background);
+  background:
+    radial-gradient(1200px 600px at 85% -10%, var(--glow), transparent 60%),
+    radial-gradient(900px 500px at -10% 20%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 60%),
+    var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-cuerpo), system-ui, sans-serif;
+}
+
+/* rejilla sutil tipo plano urbano */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--foreground) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--foreground) 4%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 75%);
+  z-index: -1;
+}
+
+.tarjeta {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 20px 50px -25px rgba(0,0,0,0.35);
+  transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+.tarjeta:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+
+.texto-fuego {
+  background: linear-gradient(100deg, var(--amber), var(--accent) 45%, var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.borde-fuego {
+  background: linear-gradient(var(--card-solid), var(--card-solid)) padding-box,
+    linear-gradient(120deg, var(--amber), var(--accent), var(--accent-2)) border-box;
+  border: 1px solid transparent;
 }
 
 @keyframes aparecer {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(18px) scale(.98); }
   to { opacity: 1; transform: none; }
 }
-.aparecer { animation: aparecer 0.6s ease-out both; }
+.aparecer { animation: aparecer .7s cubic-bezier(.2,.7,.2,1) both; }
+.revelar { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); }
+.revelar.visible { opacity: 1; transform: none; }
+
+@keyframes pulso {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+.pulso { animation: pulso 1.6s infinite; }
+
+@keyframes deriva { from { transform: translateY(0) } to { transform: translateY(-12px) } }
+.deriva { animation: deriva 6s ease-in-out infinite alternate; }
+
+input[type="range"] { accent-color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .aparecer, .pulso, .deriva { animation: none; }
+  .revelar { opacity: 1; transform: none; transition: none; }
+}

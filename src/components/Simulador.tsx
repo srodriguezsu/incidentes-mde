@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DIAS_LARGO, corto, fmt, hora } from "./ui";
+import { DIAS_LARGO, corto, fmt, fuego, hora } from "./ui";
 
 type Props = { matriz: Record<string, (number | null)[][]>; semanas: number };
 
@@ -32,13 +32,13 @@ export function Simulador({ matriz, semanas }: Props) {
       <div className="space-y-3">
         <label className="block text-sm">
           <span className="text-muted">Comuna</span>
-          <select value={c} onChange={(e) => setC(e.target.value)} className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2">
+          <select value={c} onChange={(e) => setC(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-card-solid px-3 py-2.5 font-medium outline-none focus:ring-2 focus:ring-accent/40">
             {comunas.map((x) => <option key={x} value={x}>{x}</option>)}
           </select>
         </label>
         <label className="block text-sm">
           <span className="text-muted">Día</span>
-          <select value={d} onChange={(e) => setD(+e.target.value)} className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2">
+          <select value={d} onChange={(e) => setD(+e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-card-solid px-3 py-2.5 font-medium outline-none focus:ring-2 focus:ring-accent/40">
             {DIAS_LARGO.map((x, i) => <option key={x} value={i}>{x}</option>)}
           </select>
         </label>
@@ -48,12 +48,13 @@ export function Simulador({ matriz, semanas }: Props) {
         </label>
       </div>
 
-      <div className="rounded-xl border border-line p-4">
+      <div className="borde-fuego rounded-2xl p-5 shadow-xl shadow-accent/10">
         <div className="flex items-center justify-between gap-2">
           <div className="text-sm text-muted">Nivel relativo</div>
           <span className={`rounded-full px-3 py-1 text-sm font-semibold ${nivel[1]}`}>{nivel[0]}</span>
         </div>
-        <div className="mt-2 text-4xl font-bold tabular-nums">{fmt(r.ratio, 2)}×</div>
+        <div className="mt-2 font-display text-6xl font-extrabold tabular-nums texto-fuego">{fmt(r.ratio, 2)}×</div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (r.ratio / 3) * 100)}%`, background: `linear-gradient(90deg, ${fuego(0)}, ${fuego(Math.min(1, r.ratio / 3))})` }} /></div>
         <p className="mt-1 text-sm">
           En <b>{corto(c)}</b>, los {DIAS_LARGO[d]} a las {hora(h)} se registraron <b>{fmt(r.v)}</b> incidentes en{" "}
           {fmt(semanas)} semanas (≈ {fmt(r.v / semanas, 2)} por semana): <b>{fmt(r.ratio, 2)} veces</b> la franja promedio de la comuna.
@@ -64,8 +65,8 @@ export function Simulador({ matriz, semanas }: Props) {
               key={i}
               onClick={() => setH(i)}
               title={`${hora(i)}: ${fmt(x)}`}
-              className={`flex-1 rounded-t-sm ${i === h ? "bg-foreground" : "bg-accent/60"}`}
-              style={{ height: `${Math.max(4, ((x ?? 0) / maxFila) * 100)}%` }}
+              className={`flex-1 rounded-t-md transition-all duration-500 ${i === h ? "ring-2 ring-foreground" : ""}`}
+              style={{ height: `${Math.max(4, ((x ?? 0) / maxFila) * 100)}%`, background: i === h ? "var(--foreground)" : fuego(0.1 + 0.9 * ((x ?? 0) / maxFila)) }}
             />
           ))}
         </div>

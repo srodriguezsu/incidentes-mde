@@ -5,7 +5,7 @@ import type { Agregados, Resumen } from "@/lib/datos";
 import { Barras, Calor, HoraLetalidad, Histograma, Lorenz, Serie } from "./Graficas";
 import { Mapa } from "./Mapa";
 import { Simulador } from "./Simulador";
-import { Chips, DIAS_LARGO, Kpi, Seccion, corto, fmt, hora, pct } from "./ui";
+import { Chips, Contador, DIAS_LARGO, Kpi, Revelar, Seccion, corto, fmt, fuego, hora, pct } from "./ui";
 
 function analizar(r: Resumen) {
     let max = 0, pd = 0, ph = 0;
@@ -47,19 +47,20 @@ export function Tablero({ datos }: { datos: Agregados }) {
   return (
     <div className="space-y-6">
       {/* Hallazgos */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Hallazgo n="01" titulo={`${pct(todas.concentracion.top10PctCeldas, 0)} de los incidentes`} texto={`ocurre en solo el 10 % de las celdas de ~250 m con registros. Índice de Gini: ${fmt(todas.concentracion.giniCeldas, 2)}.`} />
-        <Hallazgo n="02" titulo={ratioNocheT ? `${fmt(ratioNocheT, 1)}× más letal` : "Noche letal"} texto={xt.masLetal && xt.menosLetal ? `un incidente a las ${hora(xt.masLetal.h)} (${fmt(xt.masLetal.v, 1)}‰ con muertos) que a las ${hora(xt.menosLetal.h)} (${fmt(xt.menosLetal.v, 1)}‰).` : ""} />
-        <Hallazgo n="03" titulo={xt.letales[0] ? `${corto(xt.letales[0].comuna)}: ${fmt(xt.letales[0].letalidad, 1)}‰` : "—"} texto={`de incidentes con muertos, ${fmt((xt.letales[0]?.letalidad ?? 0) / (todas.letalidad ?? 1), 1)} veces el promedio de la ciudad (${fmt(todas.letalidad, 1)}‰). Pocos incidentes, pero mucho más graves.`} />
-        <Hallazgo n="04" titulo={xt.covid != null ? `${pct(xt.covid, 0)} en abril de 2020` : "Pandemia"} texto="frente a febrero de 2020: la cuarentena se ve en el dato. Después, el registro termina en agosto de 2020." />
+      <section id="hallazgos" className="grid scroll-mt-24 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Hallazgo n="01" icono="◩" titulo={`${pct(todas.concentracion.top10PctCeldas, 0)} de los incidentes`} texto={`ocurre en solo el 10 % de las celdas de ~250 m con registros. Índice de Gini: ${fmt(todas.concentracion.giniCeldas, 2)}.`} />
+        <Hallazgo n="02" icono="☾" titulo={ratioNocheT ? `${fmt(ratioNocheT, 1)}× más letal` : "Noche letal"} texto={xt.masLetal && xt.menosLetal ? `un incidente a las ${hora(xt.masLetal.h)} (${fmt(xt.masLetal.v, 1)}‰ con muertos) que a las ${hora(xt.menosLetal.h)} (${fmt(xt.menosLetal.v, 1)}‰).` : ""} />
+        <Hallazgo n="03" icono="▲" titulo={xt.letales[0] ? `${corto(xt.letales[0].comuna)}: ${fmt(xt.letales[0].letalidad, 1)}‰` : "—"} texto={`de incidentes con muertos, ${fmt((xt.letales[0]?.letalidad ?? 0) / (todas.letalidad ?? 1), 1)} veces el promedio de la ciudad (${fmt(todas.letalidad, 1)}‰). Pocos incidentes, pero mucho más graves.`} />
+        <Hallazgo n="04" icono="↘" titulo={xt.covid != null ? `${pct(xt.covid, 0)} en abril de 2020` : "Pandemia"} texto="frente a febrero de 2020: la cuarentena se ve en el dato. Después, el registro termina en agosto de 2020." />
       </section>
 
-      <div className="sticky top-0 z-20 -mx-4 border-b border-line bg-background/85 px-4 py-3 backdrop-blur">
+      <div className="sticky top-2 z-30 mx-auto flex w-fit max-w-full items-center gap-3 overflow-x-auto rounded-full border border-line bg-card-solid/80 px-2 py-1.5 shadow-xl shadow-black/10 backdrop-blur-xl">
+        <span className="hidden pl-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted sm:inline">Filtrar</span>
         <Chips opciones={datos.clases} valor={clase} onChange={(c) => { setClase(c); }} />
       </div>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Kpi titulo="Incidentes" valor={fmt(r.total)} nota={`${pct(r.total / todas.total)} del total`} />
+        <Kpi titulo="Incidentes" valor={fmt(r.total)} nota={`${pct(r.total / todas.total)} del total`}><Contador key={clase} valor={r.total} /></Kpi>
         <Kpi titulo="Por día (media ± DE)" valor={`${fmt(r.diario.media, 1)}`} nota={`± ${fmt(r.diario.sd, 1)} · mediana ${fmt(r.diario.mediana)}`} />
         <Kpi titulo="Con muertos" valor={fmt(r.porGravedad["Con muertos"] ?? null)} nota={`${fmt(r.letalidad, 2)} por cada 1.000`} tono="text-accent-2" />
         <Kpi titulo="Con heridos" valor={pct((r.porGravedad["Con heridos"] ?? 0) / r.total, 0)} nota={`${fmt(r.porGravedad["Con heridos"] ?? null)} incidentes`} />
@@ -68,11 +69,11 @@ export function Tablero({ datos }: { datos: Agregados }) {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <Seccion titulo="Mapa de la ciudad" subtitulo="Construido solo con las coordenadas del conjunto, agregadas en celdas. Cambia a «Por hora» y dale reproducir.">
+        <Seccion capitulo="Capítulo 1 · Dónde" icono="mapa" titulo="Mapa de la ciudad" subtitulo="Construido solo con las coordenadas del conjunto, agregadas en celdas. Cambia a «Por hora» y dale reproducir.">
           <Mapa celdas={r.celdas} comunas={r.porComuna} celda={datos.celdaGrados} seleccion={comuna} onSeleccion={setComuna} />
         </Seccion>
 
-        <Seccion titulo={det ? det.comuna : "Detalle por comuna"} subtitulo={det ? `Puesto ${rank} de ${x.geo.length} por número de incidentes` : "Toca una comuna en el mapa o en la tabla."}>
+        <Seccion capitulo="Zoom" icono="pin" titulo={det ? det.comuna : "Detalle por comuna"} subtitulo={det ? `Puesto ${rank} de ${x.geo.length} por número de incidentes` : "Toca una comuna en el mapa o en la tabla."}>
           {det ? (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -86,7 +87,7 @@ export function Tablero({ datos }: { datos: Agregados }) {
                 <div className="flex h-24 items-end gap-[2px]">
                   {det.porHora.map((v, h) => {
                     const m = Math.max(1, ...det.porHora.map((y) => y ?? 0));
-                    return <div key={h} title={`${hora(h)}: ${fmt(v)}`} className="flex-1 rounded-t-sm bg-accent transition-all duration-500" style={{ height: `${Math.max(2, ((v ?? 0) / m) * 100)}%` }} />;
+                    return <div key={h} title={`${hora(h)}: ${fmt(v)}`} className="flex-1 rounded-t-md transition-all duration-700" style={{ height: `${Math.max(2, ((v ?? 0) / m) * 100)}%`, background: fuego(0.1 + 0.9 * ((v ?? 0) / m)) }} />;
                   })}
                 </div>
                 <div className="mt-1 flex justify-between text-[10px] text-muted"><span>0h</span><span>12h</span><span>23h</span></div>
@@ -94,27 +95,27 @@ export function Tablero({ datos }: { datos: Agregados }) {
               <button onClick={() => setComuna(null)} className="text-sm text-muted underline">Quitar selección</button>
             </div>
           ) : (
-            <Barras items={x.geo.slice(0, 10).map((c) => ({ k: corto(c.comuna), v: c.n }))} />
+            <Barras items={x.geo.slice(0, 16).map((c) => ({ k: corto(c.comuna), v: c.n }))} />
           )}
         </Seccion>
       </div>
 
-      <Seccion titulo="¿Cuándo ocurren? Hora × día de la semana" subtitulo="Intensidad = número de incidentes en cada franja durante todo el periodo.">
+      <Seccion capitulo="Capítulo 2 · Cuándo" icono="reloj" titulo="¿Cuándo ocurren? Hora × día de la semana" subtitulo="Intensidad = número de incidentes en cada franja durante todo el periodo.">
         <Calor calor={r.calor} />
       </Seccion>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Seccion titulo="De día hay más incidentes; de noche, más graves" subtitulo="Barras: conteo por hora. Línea: incidentes con muertos por cada 1.000 (‰).">
+        <Seccion capitulo="Capítulo 3 · Qué tan grave" icono="rayo" titulo="De día hay más incidentes; de noche, más graves" subtitulo="Barras: conteo por hora. Línea: incidentes con muertos por cada 1.000 (‰).">
           <HoraLetalidad porHora={r.porHora} letalidad={r.letalidadPorHora} />
         </Seccion>
-        <Seccion titulo="Evolución mensual" subtitulo={`${datos.fuente.primerDia} a ${datos.fuente.ultimoDia}. Pasa el cursor para ver cada mes.`}>
+        <Seccion capitulo="En el tiempo" icono="curva" titulo="Evolución mensual" subtitulo={`${datos.fuente.primerDia} a ${datos.fuente.ultimoDia}. Pasa el cursor para ver cada mes.`}>
           <Serie serie={r.serieMensual} />
           <div className="mt-3 grid grid-cols-6 gap-1 text-center text-[10px] sm:grid-cols-12">
             {r.porMes.map((m) => {
               const max = Math.max(...r.porMes.map((y) => y.n ?? 0));
               return (
                 <div key={m.mes} title={fmt(m.n)}>
-                  <div className="mx-auto h-8 w-full rounded bg-accent" style={{ opacity: 0.15 + 0.85 * ((m.n ?? 0) / max) }} />
+                  <div className="mx-auto h-9 w-full rounded-lg" style={{ background: fuego(Math.pow((m.n ?? 0) / max, 3)) }} />
                   <div className="mt-0.5 text-muted">{m.mes}</div>
                 </div>
               );
@@ -125,19 +126,19 @@ export function Tablero({ datos }: { datos: Agregados }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <Seccion titulo="¿Qué tan normal es un día?" subtitulo="Distribución de incidentes por día, con media, mediana, rango intercuartílico (barra gris) y percentiles 5–95.">
+        <Seccion capitulo="Capítulo 4 · Estadística" icono="campana" titulo="¿Qué tan normal es un día?" subtitulo="Distribución de incidentes por día, con media, mediana, rango intercuartílico (barra gris) y percentiles 5–95.">
           <Histograma hist={r.histogramaDiario} d={r.diario} />
           <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-xs sm:grid-cols-6">
             {[
               ["Días", fmt(r.diario.dias)], ["Media", fmt(r.diario.media, 1)], ["DE", fmt(r.diario.sd, 1)],
               ["CV", fmt(r.diario.cv, 2)], ["Mín.", fmt(r.diario.min)], ["Máx.", fmt(r.diario.max)],
             ].map(([k, v]) => (
-              <div key={k} className="rounded-lg bg-line/50 p-2"><dt className="text-muted">{k}</dt><dd className="font-semibold tabular-nums">{v}</dd></div>
+              <div key={k} className="rounded-xl border border-line bg-card-solid/50 p-2"><dt className="text-muted">{k}</dt><dd className="font-semibold tabular-nums">{v}</dd></div>
             ))}
           </dl>
           <p className="mt-2 text-xs text-muted">Día récord: <b className="text-foreground">{r.diario.diaMax.fecha}</b> con {fmt(r.diario.diaMax.n)} incidentes.</p>
         </Seccion>
-        <Seccion titulo="Concentración espacial" subtitulo="Curva de Lorenz: si todas las celdas tuvieran los mismos incidentes, la curva sería la diagonal.">
+        <Seccion capitulo="Desigualdad" icono="capas" titulo="Concentración espacial" subtitulo="Curva de Lorenz: si todas las celdas tuvieran los mismos incidentes, la curva sería la diagonal.">
           <Lorenz celdas={r.celdas} gini={r.concentracion.giniCeldas} />
           <p className="mt-2 text-sm">
             El <b>10 %</b> de las celdas concentra el <b className="text-accent">{pct(r.concentracion.top10PctCeldas, 0)}</b>; las 3 comunas con más incidentes suman el{" "}
@@ -146,12 +147,12 @@ export function Tablero({ datos }: { datos: Agregados }) {
         </Seccion>
       </div>
 
-      <Seccion titulo="Simulador: ¿qué tan cargada está mi franja?" subtitulo="Elige comuna, día y hora y compárala con la franja promedio de esa comuna (todas las clases).">
+      <Seccion id="simulador" capitulo="Capítulo 5 · Tu trayecto" icono="brujula" className="scroll-mt-24" titulo="Simulador: ¿qué tan cargada está mi franja?" subtitulo="Elige comuna, día y hora y compárala con la franja promedio de esa comuna (todas las clases).">
         {todas.comunaDiaHora && <Simulador matriz={todas.comunaDiaHora} semanas={semanas} />}
       </Seccion>
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <Seccion titulo="Ranking de comunas" subtitulo="Letalidad = incidentes con muertos por cada 1.000 incidentes (solo comunas con al menos 100 incidentes y 5 con muertos).">
+        <Seccion capitulo="Ranking" icono="lista" titulo="Ranking de comunas" subtitulo="Letalidad = incidentes con muertos por cada 1.000 incidentes (solo comunas con al menos 100 incidentes y 5 con muertos).">
           <div className="mb-3"><Chips opciones={["Incidentes", "Letalidad"] as ("Incidentes" | "Letalidad")[]} valor={orden} onChange={setOrden} /></div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[440px] text-sm">
@@ -174,7 +175,7 @@ export function Tablero({ datos }: { datos: Agregados }) {
             </table>
           </div>
         </Seccion>
-        <Seccion titulo="¿En qué tipo de vía?" subtitulo="Diseño del lugar del incidente.">
+        <Seccion capitulo="Infraestructura" icono="via" titulo="¿En qué tipo de vía?" subtitulo="Diseño del lugar del incidente.">
           <Barras items={r.porDiseno.map((d) => ({ k: d.diseno, v: d.n }))} color="bg-accent-3" />
           <div className="mt-5">
             <div className="mb-2 text-sm font-medium">Por año</div>
@@ -186,12 +187,18 @@ export function Tablero({ datos }: { datos: Agregados }) {
   );
 }
 
-function Hallazgo({ n, titulo, texto }: { n: string; titulo: string; texto: string }) {
+function Hallazgo({ n, titulo, texto, icono }: { n: string; titulo: string; texto: string; icono: string }) {
   return (
-    <div className="aparecer rounded-2xl border border-line bg-card p-4">
-      <div className="font-mono text-xs text-accent">HALLAZGO {n}</div>
-      <div className="mt-1 text-xl font-bold leading-tight">{titulo}</div>
-      <p className="mt-1 text-sm text-muted">{texto}</p>
-    </div>
+    <Revelar retraso={Number(n) * 90}>
+      <div className="tarjeta group h-full overflow-hidden p-5 hover:-translate-y-1 hover:shadow-2xl hover:shadow-accent/10">
+        <div className="pointer-events-none absolute -right-6 -top-10 font-display text-[7rem] font-extrabold leading-none text-foreground/[0.04] transition group-hover:text-accent/10">{n}</div>
+        <div className="flex items-center gap-2">
+          <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-amber via-accent to-accent-2 text-sm text-white">{icono}</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent">Hallazgo {n}</span>
+        </div>
+        <div className="mt-3 font-display text-2xl font-extrabold leading-tight texto-fuego">{titulo}</div>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{texto}</p>
+      </div>
+    </Revelar>
   );
 }

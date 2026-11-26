@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Comuna } from "@/lib/datos";
-import { Chips, corto, fmt, hora } from "./ui";
+import { Chips, Leyenda, corto, fmt, fuego, hora } from "./ui";
 
 type Props = {
   celdas: [number, number, number][];
@@ -41,8 +41,8 @@ export function Mapa({ celdas, comunas, celda, seleccion, onSeleccion }: Props) 
     const ordenadas = celdas
       .filter(([la, lo]) => la >= la0 && la <= la1 && lo >= lo0 && lo <= lo1)
       .sort((a, b) => a[2] - b[2]);
-    // Escala logarítmica saturada en el percentil 98 para que se vea el contraste.
-    const max = Math.log1p(q(celdas.map((c) => c[2]), 0.98) || 1);
+    // Escala raíz cuadrada saturada en el percentil 98 para que se vea el contraste.
+    const max = q(celdas.map((c) => c[2]), 0.98) || 1;
     return { H, x, y, lado: celda * s, ordenadas, max, s };
   }, [celdas, celda]);
 
@@ -59,12 +59,12 @@ export function Mapa({ celdas, comunas, celda, seleccion, onSeleccion }: Props) 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPlay((p) => !p)}
-              className="rounded-full bg-accent px-3 py-1 text-sm font-medium text-white"
+              className={`rounded-full bg-gradient-to-r from-accent to-accent-2 px-4 py-1.5 text-sm font-semibold text-white shadow-md shadow-accent/30 ${play ? "pulso" : ""}`}
               aria-label={play ? "Pausar" : "Reproducir"}
             >
               {play ? "❚❚ Pausa" : "▶ Reproducir el día"}
             </button>
-            <span className="w-20 text-right font-mono text-sm tabular-nums">{hora(h)}</span>
+            <span className="w-24 text-right font-display text-2xl font-extrabold tabular-nums texto-fuego">{hora(h)}</span>
           </div>
         )}
       </div>
@@ -77,7 +77,13 @@ export function Mapa({ celdas, comunas, celda, seleccion, onSeleccion }: Props) 
         />
       )}
       <div className="relative">
-        <svg viewBox={`0 0 ${W} ${geo.H}`} className="h-auto w-full touch-manipulation" onMouseLeave={() => setHover(null)}>
+        <svg viewBox={`0 0 ${W} ${geo.H}`} className="h-auto w-full touch-manipulation rounded-2xl bg-[#0d0a12] ring-1 ring-white/5" onMouseLeave={() => setHover(null)}>
+          <defs>
+            <filter id="brillo" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="b" />
+              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
           {geo.ordenadas.map(([la, lo, n]) => (
             <rect
               key={`${la},${lo}`}
@@ -85,8 +91,9 @@ export function Mapa({ celdas, comunas, celda, seleccion, onSeleccion }: Props) 
               y={geo.y(la) - geo.lado / 2}
               width={geo.lado + 0.3}
               height={geo.lado + 0.3}
-              fill="var(--accent)"
-              opacity={modo === "Densidad" ? 0.06 + 0.94 * Math.min(1, Math.log1p(n) / geo.max) : 0.12}
+              fill={modo === "Densidad" ? fuego(Math.sqrt(Math.min(1, n / geo.max))) : "var(--muted)"}
+              opacity={modo === "Densidad" ? 0.18 + 0.82 * Math.sqrt(Math.min(1, n / geo.max)) : 0.12}
+              rx={0.6}
               onMouseMove={modo === "Densidad" ? () => setHover({ x: geo.x(lo), y: geo.y(la), texto: `${fmt(n)} incidentes en esta celda de ~250 m` }) : undefined}
             />
           ))}
@@ -109,18 +116,21 @@ export function Mapa({ celdas, comunas, celda, seleccion, onSeleccion }: Props) 
               >
                 <circle
                   cx={geo.x(lo)} cy={geo.y(la)} r={r}
-                  fill={modo === "Por hora" ? "var(--accent)" : "var(--foreground)"}
-                  fillOpacity={modo === "Por hora" ? 0.55 : 0.85}
-                  stroke={activa ? "var(--accent-3)" : "var(--card)"}
-                  strokeWidth={activa ? 3 : 1}
-                  style={{ transition: "r 0.5s ease" }}
+                  fill={modo === "Por hora" ? fuego(0.15 + 0.85 * v) : "#fff"}
+                  fillOpacity={modo === "Por hora" ? 0.8 : 0.95}
+                  stroke={activa ? "var(--accent-3)" : modo === "Por hora" ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.55)"}
+                  strokeWidth={activa ? 3.5 : 1.2}
+                  filter={modo === "Por hora" ? "url(#brillo)" : undefined}
+                  style={{ transition: "r 0.6s cubic-bezier(.2,.7,.2,1), fill 0.6s" }}
                 />
                 {(modo === "Por hora" ? v > 0.35 : true) && (
                   <text
                     x={geo.x(lo)} y={geo.y(la) - r - 3}
                     textAnchor="middle" fontSize={10}
-                    className="pointer-events-none fill-foreground"
-                    style={{ paintOrder: "stroke", stroke: "var(--card)", strokeWidth: 3 }}
+                    className="pointer-events-none"
+                    fill="#f6f1ea"
+                    fontWeight={600}
+                    style={{ paintOrder: "stroke", stroke: "#0d0a12", strokeWidth: 3 }}
                   >
                     {corto(c.comuna)}
                   </text>
@@ -138,6 +148,7 @@ export function Mapa({ celdas, comunas, celda, seleccion, onSeleccion }: Props) 
           </div>
         )}
       </div>
+      <div className="mt-3"><Leyenda /></div>
       <p className="mt-2 text-xs text-muted">
         {modo === "Densidad"
           ? `Cada cuadro es una celda de ~250 m (${fmt(celdas.length)} celdas). Los puntos son el centro de los incidentes de cada comuna. Toca una comuna para ver su detalle.`

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Resumen } from "@/lib/datos";
-import { DIAS, DIAS_LARGO, fmt, hora } from "./ui";
+import { DIAS, DIAS_LARGO, Leyenda, fmt, fuego, hora } from "./ui";
 
 /* ---------- Mapa de calor hora × día ---------- */
 export function Calor({ calor }: { calor: (number | null)[][] }) {
@@ -23,6 +23,7 @@ export function Calor({ calor }: { calor: (number | null)[][] }) {
           ))}
         </div>
       </div>
+      <div className="mt-3"><Leyenda /></div>
       <p className="mt-3 min-h-10 text-sm">
         {sel ? (
           <>
@@ -48,8 +49,8 @@ function Fila({ d, fila, max, sel, onSel }: {
           key={h}
           onClick={() => onSel([d, h])}
           title={`${DIAS[d]} ${h}:00 — ${fmt(n)}`}
-          className={`aspect-square rounded-[3px] bg-accent ${sel?.[0] === d && sel?.[1] === h ? "ring-2 ring-foreground" : ""}`}
-          style={{ opacity: n == null ? 0.05 : 0.06 + 0.94 * (n / max) }}
+          className={`aspect-[4/3] rounded-md transition-transform duration-200 hover:z-10 hover:scale-125 sm:aspect-square ${sel?.[0] === d && sel?.[1] === h ? "z-10 scale-125 ring-2 ring-foreground" : ""}`}
+          style={{ background: n == null ? "var(--line)" : fuego(Math.pow(n / max, 1.3)) }}
         />
       ))}
     </>
@@ -70,11 +71,12 @@ export function HoraLetalidad({ porHora, letalidad }: { porHora: (number | null)
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
         {porHora.map((v, h) => (
-          <rect key={h} x={x(h) + 1} y={yN(v ?? 0)} width={bw - 2} height={H - P.b - yN(v ?? 0)} fill="var(--accent)" opacity={0.75} rx={2}>
+          <rect key={h} x={x(h) + 1.5} y={yN(v ?? 0)} width={bw - 3} height={H - P.b - yN(v ?? 0)} fill={fuego(0.1 + 0.6 * ((v ?? 0) / maxN))} rx={3}>
             <title>{`${hora(h)}: ${fmt(v)} incidentes · ${fmt(letalidad[h], 1)} con muertos por cada 1.000`}</title>
           </rect>
         ))}
-        <polyline points={pts} fill="none" stroke="var(--accent-2)" strokeWidth={2.5} strokeLinejoin="round" />
+        <defs><filter id="glowL"><feGaussianBlur stdDeviation="3" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
+        <polyline points={pts} fill="none" stroke="var(--accent-2)" strokeWidth={3} strokeLinejoin="round" filter="url(#glowL)" />
         {letalidad.map((v, h) => v != null && <circle key={h} cx={x(h) + bw / 2} cy={yL(v)} r={3} fill="var(--accent-2)" />)}
         {[0, 6, 12, 18, 23].map((h) => (
           <text key={h} x={x(h) + bw / 2} y={H - 6} textAnchor="middle" fontSize={10} className="fill-muted">{h}h</text>
@@ -104,8 +106,12 @@ export function Serie({ serie }: { serie: Resumen["serieMensual"] }) {
   const [hov, setHov] = useState<number | null>(null);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" onMouseLeave={() => setHov(null)}>
-      <polygon points={area} fill="var(--accent)" opacity={0.12} />
-      <polyline points={linea} fill="none" stroke="var(--accent)" strokeWidth={2} />
+      <defs>
+        <linearGradient id="areaS" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="var(--accent)" stopOpacity={0.45} /><stop offset="1" stopColor="var(--accent)" stopOpacity={0} /></linearGradient>
+        <linearGradient id="lineaS" x1="0" x2="1"><stop offset="0" stopColor="var(--amber)" /><stop offset=".6" stopColor="var(--accent)" /><stop offset="1" stopColor="var(--accent-2)" /></linearGradient>
+      </defs>
+      <polygon points={area} fill="url(#areaS)" />
+      <polyline points={linea} fill="none" stroke="url(#lineaS)" strokeWidth={2.5} strokeLinejoin="round" />
       {serie.map((s, i) =>
         s.periodo.endsWith("-01") ? (
           <g key={s.periodo}>
@@ -155,7 +161,7 @@ export function Histograma({ hist, d }: { hist: Resumen["histogramaDiario"]; d: 
       <text x={x(d.p5)} y={P.t - 16} fontSize={9} textAnchor="middle" className="fill-muted">p5 {d.p5}</text>
       <text x={x(d.p95)} y={P.t - 16} fontSize={9} textAnchor="middle" className="fill-muted">p95 {d.p95}</text>
       {hist.map((b) => (
-        <rect key={b.desde} x={x(b.desde) + 1} y={y(b.dias)} width={Math.max(1, x(b.hasta + 1) - x(b.desde) - 2)} height={H - P.b - y(b.dias)} fill="var(--accent)" opacity={0.7} rx={2}>
+        <rect key={b.desde} x={x(b.desde) + 1} y={y(b.dias)} width={Math.max(1, x(b.hasta + 1) - x(b.desde) - 2)} height={H - P.b - y(b.dias)} fill={fuego((b.desde - lo) / (hi - lo))} rx={3}>
           <title>{`${b.desde}–${b.hasta} incidentes/día: ${b.dias} días`}</title>
         </rect>
       ))}
@@ -183,8 +189,9 @@ export function Lorenz({ celdas, gini }: { celdas: [number, number, number][]; g
     <svg viewBox={`-28 -6 ${S + 36} ${S + 30}`} className="mx-auto h-auto w-full max-w-64">
       <rect x={0} y={0} width={S} height={S} fill="none" stroke="var(--line)" />
       <line x1={0} y1={S} x2={S} y2={0} stroke="var(--muted)" strokeDasharray="4 3" />
-      <polygon points={`${pts} ${S},${S}`} fill="var(--accent)" opacity={0.15} />
-      <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth={2.5} />
+      <defs><linearGradient id="lz" x1="0" x2="1"><stop offset="0" stopColor="var(--amber)" /><stop offset="1" stopColor="var(--accent-2)" /></linearGradient></defs>
+      <polygon points={`${pts} ${S},${S}`} fill="url(#lz)" opacity={0.25} />
+      <polyline points={pts} fill="none" stroke="url(#lz)" strokeWidth={3.5} />
       <text x={S / 2} y={S + 16} fontSize={10} textAnchor="middle" className="fill-muted">% de celdas (de menos a más)</text>
       <text x={-16} y={S / 2} fontSize={10} textAnchor="middle" transform={`rotate(-90 -16 ${S / 2})`} className="fill-muted">% de incidentes</text>
       <text x={10} y={18} fontSize={12} className="fill-foreground" fontWeight={700}>Gini {fmt(gini, 2)}</text>
@@ -193,15 +200,15 @@ export function Lorenz({ celdas, gini }: { celdas: [number, number, number][]; g
 }
 
 /* ---------- Barras horizontales genéricas ---------- */
-export function Barras({ items, color = "bg-accent", sufijo = "" }: { items: { k: string; v: number | null; nota?: string }[]; color?: string; sufijo?: string }) {
+export function Barras({ items, color = "bg-gradient-to-r from-amber via-accent to-accent-2", sufijo = "" }: { items: { k: string; v: number | null; nota?: string }[]; color?: string; sufijo?: string }) {
   const max = Math.max(1, ...items.map((i) => i.v ?? 0));
   return (
     <ul className="space-y-1.5">
       {items.map((i) => (
         <li key={i.k} className="grid grid-cols-[7.5rem_1fr_4.5rem] items-center gap-2 text-sm sm:grid-cols-[11rem_1fr_6rem]">
           <span className="truncate" title={i.k}>{i.k}</span>
-          <span className="h-3.5 overflow-hidden rounded bg-line">
-            <span className={`block h-full rounded ${color} transition-all duration-500`} style={{ width: `${((i.v ?? 0) / max) * 100}%` }} />
+          <span className="h-3 overflow-hidden rounded-full bg-line">
+            <span className={`block h-full rounded-full ${color} transition-all duration-700`} style={{ width: `${((i.v ?? 0) / max) * 100}%` }} />
           </span>
           <span className="text-right tabular-nums" title={i.nota}>{fmt(i.v, sufijo ? 1 : 0)}{sufijo}</span>
         </li>
