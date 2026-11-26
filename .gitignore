@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# datos crudos (se descargan con scripts/descargar.sh)
+/data/raw/
+__pycache__/
