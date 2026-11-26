@@ -5,7 +5,7 @@ export const revalidate = 600;
 export async function GET(req: Request) {
   const clase = new URL(req.url).searchParams.get("clase") ?? "Todas";
   const d = getAgregados();
-  const datos = d.porClase[clase as keyof typeof d.porClase];
+  const datos = d.porClase[clase];
   if (!datos) {
     return Response.json({ error: `Clase no válida. Use: ${d.clases.join(", ")}` }, { status: 400 });
   }
