@@ -2,7 +2,7 @@
 
 MVP web del reto **"De los datos abiertos al MVP con IA"** (Cátedra Industria TI · UNAL Medellín).
 
-- **URL pública:** _pendiente (Vercel)_
+- **URL pública:** https://incidentes-mde.vercel.app
 - **Video (2 min):** _pendiente_
 - **Equipo:** _Integrante 1 (Datos) · Integrante 2 (Producto) · Integrante 3 (Front) · Integrante 4 (Back) · Integrante 5 (Pitch y QA)_
 
